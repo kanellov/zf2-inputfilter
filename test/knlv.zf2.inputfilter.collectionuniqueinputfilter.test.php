@@ -11,7 +11,6 @@ use Zend\Filter;
 
 fu::setup(function () {
     $collectionFilter = new CollectionUniqueInputFilter();
-    fu::fixture('collectionFilter', $collectionFilter);
 
     $foo = new Input();
     $foo->getFilterChain()->attach(new Filter\StringTrim());
@@ -28,32 +27,202 @@ fu::setup(function () {
     $inputFilter->add($foo, 'foo')
        ->add($bar, 'bar')
        ->add($baz, 'baz');
+    $collectionFilter->setInputFilter($inputFilter);
 
+    fu::fixture('collectionFilter', $collectionFilter);
     fu::fixture('inputFilter', $inputFilter);
 });
 
-fu::test('Test collection inputfilter', function () {
-    $collectionFilter = fu::fixture('collectionFilter');
-    $inputFilter = fu::fixture('inputFilter');
-    $collectionFilter->setInputFilter($inputFilter);
+fu::test('Test inputfilter validates on valid data', function () {
     $data = array(
-       array(
-            'foo' => 'bazbat',
-            'bar' => '54321',
+        array(
+            'foo' => ' bazbat ',
+            'bar' => ' 12345 ',
             'baz' => '',
         ),
         array(
-            'foo' => 'bazbat',
-            'bar' => '54321',
-            'baz' => '',
-        ),
-        array(
-            'foo' => 'bazbat',
-            'bar' => '54321a',
+            'foo' => ' bazbar ',
+            'bar' => ' 54321 ',
             'baz' => '',
         ),
     );
-    $collectionFilter->setUniqueFields(array('bar'));
+    $expected = array(
+        array(
+            'foo' => 'bazbat',
+            'bar' => '12345',
+            'baz' => '',
+        ),
+        array(
+            'foo' => 'bazbar',
+            'bar' => '54321',
+            'baz' => '',
+        ),
+    );
+    $collectionFilter = fu::fixture('collectionFilter');
     $collectionFilter->setData($data);
-    fu::expect_fail('Not inplemented');
+    fu::ok($collectionFilter->isValid(), 'Assert inputfilter is valid');
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
+    fu::ok(
+        empty($collectionFilter->getMessages()),
+        'Assert inputfilter has no error messages'
+    );
+});
+
+fu::test('Test inputfilter fails validation on invalid data', function () {
+    $data = array(
+        array(
+            'foo' => ' bazbatfoo ',
+            'bar' => ' 12345 ',
+            'baz' => '',
+        ),
+        array(
+            'foo' => ' bazbar ',
+            'bar' => ' abc ',
+            'baz' => '',
+        ),
+    );
+
+    $expected = array(
+        array(
+            'foo' => 'bazbatfoo',
+            'bar' => '12345',
+            'baz' => '',
+        ),
+        array(
+            'foo' => 'bazbar',
+            'bar' => 'abc',
+            'baz' => '',
+        ),
+    );
+
+    $collectionFilter = fu::fixture('collectionFilter');
+    $collectionFilter->setData($data);
+
+    fu::not_ok($collectionFilter->isValid(), 'Assert inputfilter is invalid');
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
+    $messages = $collectionFilter->getMessages();
+    fu::ok(
+        isset($messages[0]['foo'][Validator\StringLength::TOO_LONG]) &&
+        isset($messages[1]['bar'][Validator\Digits::NOT_DIGITS]),
+        'Assert correct error messages'
+    );
+});
+
+fu::test('Test inputfilter validate for unique values in fields on valid data', function () {
+    $data = array(
+        array(
+            'foo' => ' bazbat ',
+            'bar' => ' 12345 ',
+            'baz' => '',
+        ),
+        array(
+            'foo' => ' bazbar ',
+            'bar' => ' 12345 ',
+            'baz' => '',
+        ),
+    );
+    $expected = array(
+        array(
+            'foo' => 'bazbat',
+            'bar' => '12345',
+            'baz' => '',
+        ),
+        array(
+            'foo' => 'bazbar',
+            'bar' => '12345',
+            'baz' => '',
+        ),
+    );
+
+    $collectionFilter = fu::fixture('collectionFilter');
+    $collectionFilter->setData($data);
+    $collectionFilter->setUniqueFields(array('foo'));
+    fu::ok($collectionFilter->isValid(), 'Assert inputfilter is valid');
+    fu::ok(
+        empty($collectionFilter->getMessages()),
+        'Assert inputfilter has no error messages'
+    );
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
+
+    $collectionFilter->setUniqueFields(array('bar'));
+    fu::not_ok($collectionFilter->isValid(), 'Assert inputfilter is invalid');
+    $messages = $collectionFilter->getMessages();
+    fu::ok(
+        isset($messages[1]['bar'][$collectionFilter::NOT_UNIQUE]),
+        'Assert message for not unique isset'
+    );
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
+});
+
+fu::test('Test inputfilter validate for unique values in fields on invalid data', function () {
+    $data = array(
+        array(
+            'foo' => ' bazbatfoo ',
+            'bar' => ' 12345 ',
+            'baz' => '',
+        ),
+        array(
+            'foo' => ' bazbatfoo ',
+            'bar' => ' 54321 ',
+            'baz' => '',
+        ),
+    );
+    $expected = array(
+        array(
+            'foo' => 'bazbatfoo',
+            'bar' => '12345',
+            'baz' => '',
+        ),
+        array(
+            'foo' => 'bazbatfoo',
+            'bar' => '54321',
+            'baz' => '',
+        ),
+    );
+
+    $collectionFilter = fu::fixture('collectionFilter');
+    $collectionFilter->setData($data);
+    $collectionFilter->setUniqueFields(array('bar'));
+    fu::not_ok($collectionFilter->isValid(), 'Assert inputfilter is invalid');
+    $messages = $collectionFilter->getMessages();
+    fu::ok(
+        isset($messages[0]['foo'][Validator\StringLength::TOO_LONG]),
+        'Assert correct error messages'
+    );
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
+
+    $collectionFilter->setUniqueFields(array('foo'));
+    fu::not_ok($collectionFilter->isValid(), 'Assert inputfilter is invalid');
+    $messages = $collectionFilter->getMessages();
+    fu::ok(
+        isset($messages[0]['foo'][Validator\StringLength::TOO_LONG]) &&
+        isset($messages[1]['foo'][Validator\StringLength::TOO_LONG]) &&
+        isset($messages[1]['foo'][$collectionFilter::NOT_UNIQUE]),
+        'Assert message for not unique isset along with other'
+    );
+    fu::equal(
+        $expected,
+        $collectionFilter->getValues(),
+        'Assert inputfilter returns expected values'
+    );
 });
