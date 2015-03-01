@@ -66,8 +66,9 @@ fu::test('Test inputfilter validates on valid data', function () {
         $collectionFilter->getValues(),
         'Assert inputfilter returns expected values'
     );
+    $messages = $collectionFilter->getMessages();
     fu::ok(
-        empty($collectionFilter->getMessages()),
+        empty($messages),
         'Assert inputfilter has no error messages'
     );
 });
@@ -146,8 +147,9 @@ fu::test('Test inputfilter validate for unique values in fields on valid data', 
     $collectionFilter->setData($data);
     $collectionFilter->setUniqueFields(array('foo'));
     fu::ok($collectionFilter->isValid(), 'Assert inputfilter is valid');
+    $messages = $collectionFilter->getMessages();
     fu::ok(
-        empty($collectionFilter->getMessages()),
+        empty($messages),
         'Assert inputfilter has no error messages'
     );
     fu::equal(
