@@ -1,7 +1,6 @@
 {
     "name": "kanellov/zf2-inputfilter",
     "description": "Zend Framework 2 inputfilters",
-    "version": "0.0.1",
     "type": "library",
     "keywords": [
         "zend framework", "inputfilter"
