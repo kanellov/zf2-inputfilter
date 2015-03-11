@@ -42,6 +42,11 @@ class CollectionUniqueInputFilter extends CollectionInputFilter
         self::NOT_UNIQUE => 'Each input must be unique within the collection',
     );
 
+    /**
+     * Is the data set valid?
+     *
+     * @return bool
+     */
     public function isValid()
     {
         $isValid = parent::isValid();
@@ -78,6 +83,13 @@ class CollectionUniqueInputFilter extends CollectionInputFilter
 
     }
 
+    /**
+     * Set data to use when validating and filtering
+     *
+     * @param  array|Traversable $data
+     * @throws Exception\InvalidArgumentException
+     * @return InputFilterInterface
+     */
     public function setData($data)
     {
         if (!is_array($data) && !$data instanceof Traversable) {
@@ -119,6 +131,14 @@ class CollectionUniqueInputFilter extends CollectionInputFilter
         return $this;
     }
 
+    /**
+     * Return a list of validation failure messages
+     *
+     * Should return an associative array of named input/message list pairs.
+     * Pairs should only be returned for inputs that failed validation.
+     *
+     * @return array
+     */
     public function getMessages()
     {
         $messages = parent::getMessages();
