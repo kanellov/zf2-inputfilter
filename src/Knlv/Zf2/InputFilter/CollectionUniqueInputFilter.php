@@ -10,12 +10,16 @@
 
 namespace Knlv\Zf2\InputFilter;
 
+use ArrayAccess;
+use Traversable;
 use Zend\InputFilter\CollectionInputFilter;
+use Zend\InputFilter\Exception\InvalidArgumentException;
+use Zend\Stdlib\ArrayUtils;
 
 class CollectionUniqueInputFilter extends CollectionInputFilter
 {
     const NOT_UNIQUE = 'collectionNotUnique';
-    
+
     /**
      * @var array
      */
@@ -76,7 +80,18 @@ class CollectionUniqueInputFilter extends CollectionInputFilter
 
     public function setData($data)
     {
+        if (!is_array($data) && !$data instanceof Traversable) {
+            throw new InvalidArgumentException(sprintf(
+                '%s expects an array or Traversable argument; received %s',
+                __METHOD__,
+                (is_object($data) ? get_class($data) : gettype($data))
+            ));
+        }
+        if (is_object($data) && !$data instanceof ArrayAccess) {
+            $data = ArrayUtils::iteratorToArray($data);
+        }
         $this->collectionData = $data;
+
         return parent::setData($data);
     }
 
